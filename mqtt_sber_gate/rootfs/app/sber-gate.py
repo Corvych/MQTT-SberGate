@@ -95,7 +95,7 @@ def ha_script(id,OnOff):
 
 #*******************************
 class CDevicesDB(object):
-   """docstring"""
+   """ladn"""
    def __init__(self, f):
       """Constructor 'devices.json'"""
       self.fDB=f
@@ -125,9 +125,6 @@ class CDevicesDB(object):
    def clear(self,d):
       self.DB={}
       self.save_DB()
-
-   def dev_add(self):
-      print('device_Add')
 
    def dev_del(self,id):
       self.DB.pop(id, None)
@@ -241,7 +238,7 @@ class CDevicesDB(object):
       Dev={}
       Dev['devices']=[]
       Dev['devices'].append({"id": "root", "name": "Вумный контроллер", 'hw_version':VERSION, 'sw_version':VERSION })
-      Dev['devices'][0]['model']={'id': 'ID_root_hub', 'manufacturer': 'Janch', 'model': 'VHub', 'description': "HA MQTT SberGate HUB", 'category': 'hub', 'features': ['online']}
+      Dev['devices'][0]['model']={'id': 'ID_root_hub', 'manufacturer': 'Nabu Casa', 'model': 'VHub', 'description': "HA MQTT SberGate HUB", 'category': 'hub', 'features': ['online']}
       for k,v in self.DB.items():
          if v.get('enabled',False):
             d={'id': k, 'name': v.get('name',''), 'default_name': v.get('default_name','')}
@@ -261,7 +258,7 @@ class CDevicesDB(object):
                      if ft['name'] == st:
                         f.append(ft['name'])
 
-            d['model']={'id': 'ID_'+dev_cat, 'manufacturer': 'Janch', 'model': 'Model_'+dev_cat, 'category': dev_cat, 'features': f}
+            d['model']={'id': 'ID_'+dev_cat, 'manufacturer': 'Zalupa', 'model': 'Model_'+dev_cat, 'category': dev_cat, 'features': f}
 #            log(d['model'])
             d['model_id']=''
             Dev['devices'].append(d)
@@ -597,7 +594,7 @@ AgentStatus={"online": True, "error": "",  "credentials": {'username':Options['s
 #url = "http://localhost:8123/ENDPOINT"
 hds = {'Authorization': 'Bearer '+HA_TOKEN, 'content-type': 'application/json'}
 url='http://supervisor/core/api/states'
-log('Подключаемся к HA, (ha-api_url: ' + 'http://supervisor/core' + ')')
+log('Подключаемся к HA, (ha-api_url: ' + 'http://supervisor/core/api' + ')')
 cx=0
 while cx<10:
    cx = cx+1
@@ -606,6 +603,7 @@ while cx<10:
    except:
       log('Ошибка подключения к HA. Ждём 5 сек перед повторным подключением.')
       time.sleep(5)
+      
 if res.status_code == 200:
    log('Запрос устройств из Home Assistant выполнен штатно.')
    ha_dev=res.json()
@@ -654,6 +652,7 @@ def upd_default(id,s):
    log('Неиспользуемый тип: ' + s['entity_id'],0)
    pass
 
+# Берем устройства
 for s in ha_dev:
    a,b=s['entity_id'].split('.',1)
    dict={
@@ -666,22 +665,12 @@ for s in ha_dev:
    }
    dict.get(a, upd_default)(s['entity_id'],s)
 
-#******************* Configure Local client (HA Broker)
-#mqttHA = mqtt.Client("SberDevicesAgent local client")
-#mqttHA.on_connect = on_connect_local
-#mqttHA.username_pw_set(Options['ha-mqtt_login'], Options['ha-mqtt_password'])
-#mqttHA.connect(Options['ha-mqtt_broker'], Options['ha-mqtt_broker_port'], 60)
-
 #******************* Configure client (SberDevices Broker)
-#mqttc = mqtt.Client("HA client")
 mqttc = mqtt.Client()
 mqttc.on_connect = on_connect
 mqttc.on_subscribe = on_subscribe
-#mqttc.on_publish = on_publish
 mqttc.on_message = on_message
 mqttc.on_disconnect = on_disconnect
-# Uncomment to enable debug messages
-#mqttc.on_log = on_log
 mqttc.message_callback_add("sberdevices/v1/__config", on_global_conf)
 sber_root_topic='sberdevices/v1/'+Options['sber-mqtt_login']
 stdown=sber_root_topic + "/down"
@@ -690,7 +679,6 @@ mqttc.message_callback_add(stdown+"/commands", on_message_cmd)
 mqttc.message_callback_add(stdown+"/status_request", on_message_stat)
 mqttc.message_callback_add(stdown+"/config_request", on_message_conf)
 
-#mqttc = mqtt.Client("",0)
 mqttc.username_pw_set(Options['sber-mqtt_login'], Options['sber-mqtt_password'])
 mqttc.tls_set(certfile=None, keyfile=None, cert_reqs=ssl.CERT_NONE, tls_version=None)
 mqttc.tls_insecure_set(True)
@@ -700,11 +688,11 @@ mqttc.connect(Options['sber-mqtt_broker'], Options['sber-mqtt_broker_port'], 60)
 
 #*********************************
 mqttc.loop_start()
-#mqttHA.loop_start()
 
 #Хитрое получение sber-http_api_endpoint от Сберовского MQTT из глобальной конфигурации. Типа только после этого можно идти дальше, но...
 if Options.get('sber-http_api_endpoint',None) is None:
    options_change('sber-http_api_endpoint','')
+
 while (Options['sber-http_api_endpoint'] == ''):
    log('Ожидаем получение SberDevice http_api_endpoint')
    time.sleep(1)
