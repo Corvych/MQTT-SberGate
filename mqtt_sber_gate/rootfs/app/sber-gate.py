@@ -26,6 +26,7 @@ LOG_FILE = 'SberGate.log'
 LOG_FILE_MAX_SIZE = 1024*1024*7
 log_level = 3
 HA_AREA = {}
+HA_TOKEN = os.environ['SUPERVISOR_TOKEN']
 
 fOptions='options.json'
 fDevicesDB='devices.json'
@@ -59,13 +60,13 @@ def ha_OnOff(id):
    OnOff = DevicesDB.get_state(id,'on_off')
    entity_domain,entity_name=id.split('.',1)
    log('Отправляем команду в HA для '+id+' ON: '+str(OnOff))
-   url=Options['ha-api_url']+'/api/services/'+entity_domain+'/'
+   url='http://supervisor/core/api/services/'+entity_domain+'/'
    if OnOff:
       url += 'turn_on'
    else:
       url += 'turn_off'
    log('HA REST API REQUEST: '+ url)
-   hds = {'Authorization': 'Bearer '+Options['ha-api_token'], 'content-type': 'application/json'}
+   hds = {'Authorization': 'Bearer ' + HA_TOKEN, 'content-type': 'application/json'}
    response=requests.post(url, json={"entity_id": id}, headers=hds)
 #   print(response)
 
@@ -73,10 +74,10 @@ def ha_switch(id,OnOff):
 #   if DevicesDB.DB[id].get('entity_ha',False):
    log('Отправляем команду в HA для '+id+' ON: '+str(OnOff))
    if OnOff:
-      url=Options['ha-api_url']+'/api/services/switch/turn_on'
+      url='http://supervisor/core/api/services/switch/turn_on'
    else:
-      url=Options['ha-api_url']+'/api/services/switch/turn_off'
-   hds = {'Authorization': 'Bearer '+Options['ha-api_token'], 'content-type': 'application/json'}
+      url='http://supervisor/core/api/services/switch/turn_off'
+   hds = {'Authorization': 'Bearer ' + HA_TOKEN, 'content-type': 'application/json'}
    response=requests.post(url, json={"entity_id": id}, headers=hds)
 #   if response.status_code == 200:
 #      log(response.text)
@@ -86,10 +87,10 @@ def ha_switch(id,OnOff):
 def ha_script(id,OnOff):
    log('Отправляем команду в HA для '+id+' ON: '+str(OnOff))
    if OnOff:
-      url=Options['ha-api_url']+'/api/services/script/turn_on'
+      url='http://supervisor/core/api/services/script/turn_on'
    else:
-      url=Options['ha-api_url']+'/api/services/script/turn_off'
-   hds = {'Authorization': 'Bearer '+Options['ha-api_token'], 'content-type': 'application/json'}
+      url='http://supervisor/core/api/services/script/turn_off'
+   hds = {'Authorization': 'Bearer ' + HA_TOKEN, 'content-type': 'application/json'}
    response=requests.post(url, json={"entity_id": id}, headers=hds)
 
 #*******************************
@@ -480,7 +481,7 @@ def ws_on_message(ws, message):
 
 def ws_auth_required(ws,mdata):
    log("WebSocket: auth_required")
-   ws.send(json.dumps({"type": "auth", "access_token": Options['ha-api_token']}))
+   ws.send(json.dumps({"type": "auth", "access_token": HA_TOKEN}))
 def ws_auth_ok(ws,mdata):
    log("WebSocket: auth_ok")
    ws.send(json.dumps({'id': 1, 'type': 'subscribe_events', 'event_type': 'state_changed'}))
@@ -589,14 +590,14 @@ log('Чтение базы устройств')
 DevicesDB=CDevicesDB(fDevicesDB)
 AgentStatus={"online": True, "error": "",  "credentials": {'username':Options['sber-mqtt_login'],"password": "***",'broker': Options['sber-mqtt_broker']}}
 
-#log(Options['ha-api_url'])
-#log(Options['ha-api_token'])
+#log('http://supervisor/core')
+#log(HA_TOKEN)
 
 
 #url = "http://localhost:8123/ENDPOINT"
-hds = {'Authorization': 'Bearer '+Options['ha-api_token'], 'content-type': 'application/json'}
-url=Options['ha-api_url']+'/api/states'
-log('Подключаемся к HA, (ha-api_url: ' + Options['ha-api_url'] + ')')
+hds = {'Authorization': 'Bearer '+HA_TOKEN, 'content-type': 'application/json'}
+url='http://supervisor/core/api/states'
+log('Подключаемся к HA, (ha-api_url: ' + 'http://supervisor/core' + ')')
 cx=0
 while cx<10:
    cx = cx+1
@@ -998,7 +999,7 @@ except KeyboardInterrupt:
    pass
 
 
-ws_url=Options['ha-api_url'].replace('http','ws',1) + '/api/websocket'
+ws_url='ws://supervisor/core/websocket'
 log('Start WebSocket Client URL: ' + ws_url)
 #websocket.enableTrace(True)
 ws = websocket.WebSocketApp(ws_url,
