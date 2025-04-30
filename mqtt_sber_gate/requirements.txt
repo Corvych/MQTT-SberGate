@@ -1,0 +1,14 @@
+certifi==2025.4.26
+cffi==1.17.1
+charset-normalizer==3.4.1
+gevent==25.4.2
+greenlet==3.2.1
+idna==3.10
+paho-mqtt==2.1.0
+pycparser==2.22
+requests==2.32.3
+setuptools==80.0.1
+urllib3==2.4.0
+websocket==0.2.1
+zope.event==5.0
+zope.interface==7.2
